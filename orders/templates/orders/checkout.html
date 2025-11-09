@@ -1,11 +1,17 @@
-{% extends 'base.html' %}
-{% block title %}Checkout — OSMS{% endblock %}
+{% extends "base.html" %}
+{% block title %}Checkout{% endblock %}
+
 {% block content %}
-<h2>Checkout</h2>
-<form method="post">{% csrf_token %}
-  <p><label>Name</label><br><input type="text" name="name" required></p>
-  <p><label>Phone</label><br><input type="text" name="phone" required></p>
-  <p><label>Address</label><br><textarea name="address" required></textarea></p>
-  <button class="btn">Confirm Order</button>
-</form>
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Checkout</h2>
+
+    <form method="post" class="mx-auto" style="max-width: 600px;">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-success">Confirm Order</button>
+        </div>
+    </form>
+</div>
 {% endblock %}
