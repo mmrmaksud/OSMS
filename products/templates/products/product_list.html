@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Home | OSMS Shop{% endblock %}
+
+{% block content %}
+<style>
+/* ---------- Hero Section ---------- */
+.hero {
+  background: linear-gradient(to right, #4facfe, #00f2fe);
+  color: white;
+  text-align: center;
+  padding: 100px 20px;
+  border-radius: 0 0 30px 30px;
+}
+.hero h1, .hero p, .hero .btn-primary {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideFadeIn 1s forwards;
+}
+.hero h1 { animation-delay: 0.2s; font-size:3rem; font-weight:bold; }
+.hero p { animation-delay: 0.5s; font-size:1.2rem; margin-top:15px; }
+.hero .btn-primary { animation-delay: 0.8s; margin-top:20px; padding:12px 25px; border-radius:25px; font-weight:600; text-decoration:none; transition:0.3s; }
+.hero .btn-primary:hover { transform: translateY(-3px) scale(1.05); }
+
+@keyframes slideFadeIn { to { opacity:1; transform: translateY(0); } }
+
+/* ---------- Category Buttons ---------- */
+.category-section { margin:60px 0; text-align:center; }
+.category-section h2 { margin-bottom:40px; font-size:2rem; color:#224abe; }
+.category-buttons { display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
+
+.category-btn {
+  padding: 10px 22px;
+  border: 2px solid #4e73df;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 500;
+  color: #4e73df;
+  transition: all 0.3s ease;
+  transform: scale(1);
+}
+
+.category-btn.active {
+  background: #4e73df;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.category-btn:hover {
+  background: #4e73df;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ---------- Product Grid ---------- */
+.product-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(250px,1fr)); gap:25px; margin-bottom:60px; }
+.product-card { background:white; border-radius:15px; overflow:hidden; box-shadow:0 6px 15px rgba(0,0,0,0.07); transition: transform 0.6s ease, box-shadow 0.6s ease, opacity 0.6s ease; opacity:0; transform:translateY(20px); }
+.product-card.visible { opacity:1; transform:translateY(0); }
+.product-card img { width:100%; height:220px; object-fit:cover; }
+.product-info { padding:15px; text-align:center; }
+.product-info h3 { font-size:1.05rem; margin-bottom:8px; font-weight:600; }
+.price { color:#224abe; font-weight:bold; margin-bottom:12px; }
+.product-actions { display:flex; justify-content:center; gap:10px; }
+.btn-view, .btn-add { padding:8px 14px; border-radius:6px; font-weight:500; border:none; cursor:pointer; transition: all 0.3s ease; }
+.btn-view { background:#e3e6f0; color:black; text-decoration:none; }
+.btn-add { background:#4e73df; color:white; }
+.btn-add:hover { background:#224abe; transform:scale(1.05); }
+
+/* ---------- CTA Section ---------- */
+.cta-section { background: linear-gradient(120deg,#224abe,#1b2a73); color:white; text-align:center; border-radius:15px; padding:60px 20px; margin-bottom:60px; }
+.cta-section h2 { font-size:2rem; margin-bottom:12px; }
+.cta-section p { margin-bottom:18px; }
+.cta-section .btn-primary { background:#ffd93b; color:black; padding:12px 20px; border-radius:25px; font-weight:600; }
+.cta-section .btn-primary:hover { background:#ffca28; transform: scale(1.05); }
+
+/* ---------- Responsive ---------- */
+@media(max-width:768px){.hero h1{font-size:2rem;}.product-card img{height:180px;}.cta-section h2{font-size:1.5rem;}}
+
+</style>
+
+<!-- Hero Section -->
+<div class="hero">
+  <h1>Welcome to OSMS Shop 🛍</h1>
+  <p>Discover the latest trends, best deals, and top-rated products — all in one place!</p>
+  <a href="#shop-now" class="btn btn-primary btn-lg mt-3">Shop Now</a>
+</div>
+
+<!-- Category Filter -->
+<div class="container category-section">
+  <h2>Shop by Category</h2>
+  <div class="category-buttons">
+    <a href="{% url 'products:product_list' %}" class="category-btn {% if not request.resolver_match.kwargs.category_id %}active{% endif %}">All</a>
+    {% for cat in categories %}
+      <a href="{% url 'products:category_products' cat.id %}" class="category-btn {% if request.resolver_match.kwargs.category_id|default_if_none:'' == cat.id|stringformat:"s" %}active{% endif %}">
+        {{ cat.name }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Product Grid -->
+<div class="container product-grid" id="shop-now">
+  {% if products %}
+    {% for product in products %}
+      <div class="product-card">
+        <img src="{% if product.image %}{{ product.image.url }}{% else %}{% static 'images/no-image.png' %}{% endif %}" alt="{{ product.title }}" />
+        <div class="product-info">
+          <h3>{{ product.title|truncatechars:30 }}</h3>
+          <p class="price">৳ {{ product.price }}</p>
+          <div class="product-actions">
+            <a href="{% url 'products:product_detail' product.id %}" class="btn-view btn btn-sm">View</a>
+            <form method="post" action="{% url 'cart:add_to_cart' product.id %}">
+              {% csrf_token %}
+              <button class="btn-add btn btn-sm">Add to Cart</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-center text-muted">No products available yet.</p>
+  {% endif %}
+</div>
+
+<!-- CTA Section -->
+<div class="container cta-section">
+  <h2>Get 10% Off Your First Order!</h2>
+  <p>Join our mailing list for exclusive offers and updates.</p>
+  <a href="#" class="btn-primary">Join Now</a>
+</div>
+
+<!-- JS for Fade-In Product Cards -->
+<script>
+  const cards = document.querySelectorAll('.product-card');
+  const observer = new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){entry.target.classList.add('visible');}
+    });
+  }, { threshold: 0.1 });
+  cards.forEach(card=>observer.observe(card));
+</script>
+{% endblock %}

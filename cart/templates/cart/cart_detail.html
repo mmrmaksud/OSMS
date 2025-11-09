@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Your Cart — OSMS{% endblock %}
+
+{% block content %}
+<div class="cart-wrapper container">
+
+  <h2 class="page-title">Your Cart</h2>
+
+  <div class="card cart-card">
+    <table class="table-modern cart-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th class="center">Qty</th>
+          <th class="right">Price</th>
+          <th class="right">Total</th>
+          <th class="center">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pid, i in cart.items %}
+        <tr>
+          <td class="product-name">{{ i.name }}</td>
+          <td class="center">{{ i.qty }}</td>
+          <td class="right">৳ {{ i.price }}</td>
+          <td class="right">৳ {{ i.price|floatformat:2 }}</td>
+          <td class="center">
+            <a class="link-danger" href="{% url 'cart:remove_from_cart' pid %}">Remove</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="center muted">Your cart is empty.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if cart %}
+    <div class="cart-footer">
+      <a class="btn-ghost" href="{% url 'products:home' %}">← Continue Shopping</a>
+
+      <div class="totals">
+        <div class="row">
+          <span>Subtotal</span>
+          <strong>৳ {{ subtotal }}</strong>
+        </div>
+        <div class="note">Shipping & taxes calculated at checkout.</div>
+
+        {% if user.is_authenticated %}
+          <a class="btn-primary btn-lg" href="{% url 'orders:checkout' %}">Proceed to Checkout</a>
+        {% else %}
+          <a class="btn-primary btn-lg" href="{% url 'login' %}?next={% url 'orders:checkout' %}">Proceed to Checkout</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
