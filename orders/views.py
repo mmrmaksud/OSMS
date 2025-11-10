@@ -1,67 +1,110 @@
+# orders/views.py
 from decimal import Decimal
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from django.contrib import messages  # ✅ messages ব্যবহার
+
 from products.models import Product
 from .models import Order, OrderItem
-from cart.cart import Cart
-from .forms import OrderForm 
 
 
-def _parse_cart(cart_dict):
+def _get_cart(request):
+    return request.session.get("cart", {})
+
+
+def _cart_items_and_subtotal(request):
+    cart = _get_cart(request)
     items = []
     subtotal = Decimal("0.00")
 
-    for pid, val in cart_dict.items():
-        if isinstance(val, dict):
-            qty = int(val.get("quantity") or val.get("qty") or 1)
-        else:
-            qty = int(val)
-
+    for pid, data in cart.items():
         product = get_object_or_404(Product, pk=int(pid))
+        qty = int(data.get("quantity", 1)) if isinstance(data, dict) else int(data)
         unit_price = product.price
         line_total = unit_price * qty
-
         subtotal += line_total
-        items.append((product, qty, unit_price, line_total))
-
+        items.append({
+            "product": product,
+            "qty": qty,
+            "unit_price": unit_price,
+            "line_total": line_total
+        })
     return items, subtotal
 
 
-@login_required
+@require_http_methods(["GET", "POST"])
 def checkout(request):
-    cart = Cart(request)
+    items, subtotal = _cart_items_and_subtotal(request)
 
-    if request.method == 'POST':
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            order = form.save(commit=False)
-            order.user = request.user
-            order.total_price = cart.get_total_price()
-            order.save()
+    # ✅ কার্ট খালি থাকলে checkout করা যাবে না
+    if request.method == "GET":
+        if not items:
+            messages.warning(request, "Your cart is empty. Add some products first.")
+            return redirect("cart:detail")
+        return render(request, "orders/checkout.html", {"items": items, "subtotal": subtotal})
 
-            for item in cart:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item['product'],
-                    quantity=item['quantity'],
-                    unit_price=item['price'],
-                    line_total=item['total_price']
-                )
-            cart.clear()
-            return redirect('orders:success', order_id=order.id)
-    else:
-        form = OrderForm()
+    # POST
+    if not items:
+        messages.warning(request, "Your cart is empty. Add some products first.")
+        return redirect("cart:detail")
 
-    return render(request, 'orders/checkout.html', {'cart': cart, 'form': form})
+    customer_name = request.POST.get("customer_name", "").strip()
+    customer_mobile = request.POST.get("customer_mobile", "").strip()
+    customer_email = request.POST.get("customer_email", "").strip()
+    customer_address = request.POST.get("customer_address", "").strip()
+
+    if not customer_name or not customer_mobile or not customer_address:
+        return render(request, "orders/checkout.html", {
+            "items": items,
+            "subtotal": subtotal,
+            "error": "Name, Mobile এবং Address আবশ্যক।",
+            "customer_name": customer_name,
+            "customer_mobile": customer_mobile,
+            "customer_email": customer_email,
+            "customer_address": customer_address,
+        })
+
+    order = Order.objects.create(
+        user=request.user if request.user.is_authenticated else None,
+        total_price=subtotal,
+        status="pending",
+        customer_name=customer_name,
+        customer_mobile=customer_mobile,
+        customer_email=customer_email or None,
+        customer_address=customer_address,
+        created_at=timezone.now(),
+    )
+
+    for it in items:
+        OrderItem.objects.create(
+            order=order,
+            product=it["product"],
+            quantity=it["qty"],
+            unit_price=it["unit_price"],
+            line_total=it["line_total"],
+        )
+
+    # কার্ট খালি করো
+    request.session["cart"] = {}
+    request.session.modified = True
+
+    return redirect("orders:success", order_id=order.id)
 
 
-@login_required
-def order_success(request, order_id):
-    order = get_object_or_404(Order, id=order_id, user=request.user)
-    return render(request, "orders/success.html", {"order": order})
-
-
-@login_required
 def my_orders(request):
-    orders = Order.objects.filter(user=request.user).order_by("-created_at")
-    return render(request, "orders/my_orders.html", {"orders": orders})
+    if request.user.is_authenticated:
+        qs = Order.objects.filter(user=request.user).order_by("-created_at")
+    else:
+        qs = Order.objects.all().order_by("-created_at")[:10]
+    return render(request, "orders/my_orders.html", {"orders": qs})
+
+
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    return render(request, "orders/order_detail.html", {"order": order})
+
+
+def success(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    return render(request, "orders/success.html", {"order": order})

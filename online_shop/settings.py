@@ -1,6 +1,6 @@
 # online_shop/settings.py
 from pathlib import Path
-import os   # <-- os import ekhon Path er por thakbe
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -9,6 +9,7 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
+    # Django apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -16,6 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Project apps
     'products',
     'cart',
     'orders',
@@ -36,7 +38,8 @@ ROOT_URLCONF = 'online_shop.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # project-level templates folder
+        # project-level templates folder
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -44,8 +47,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'products.context_processors.categories',
 
+                # custom: provides categories to all templates
+                'products.context_processors.categories',
             ],
         },
     },
@@ -60,6 +64,7 @@ DATABASES = {
     }
 }
 
+# Password validators (keep empty in dev)
 AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'en-us'
@@ -67,11 +72,24 @@ TIME_ZONE = 'Asia/Dhaka'
 USE_I18N = True
 USE_TZ = True
 
+# Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Media files
 MEDIA_URL = '/media/'
-CART_SESSION_ID = 'cart'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Sessions / Cart
+CART_SESSION_ID = 'cart'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ---------- Auth redirects (added) ----------
+# যদি ইউজার লগইন না করে checkout-এ যায়, login পেজে পাঠাবে:
+LOGIN_URL = '/accounts/login/'
+# লগইন সফল হলে কোথায় যাবে:
+LOGIN_REDIRECT_URL = '/products/'
+# লগআউটের পর কোথায় যাবে:
+LOGOUT_REDIRECT_URL = '/products/'
+# -------------------------------------------

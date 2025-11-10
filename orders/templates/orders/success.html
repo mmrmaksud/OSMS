@@ -1,11 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Order Successful{% endblock %}
 {% block content %}
-<div style="text-align:center; margin-top:50px;">
-    <h2>✅ Order Confirmed Successfully!</h2>
-    <p>Thank you, {{ order.name }}. Your order has been placed successfully.</p>
-    <p><strong>Order ID:</strong> {{ order.id }}</p>
-    <p>We’ll contact you soon for delivery details.</p>
-    <a href="/" class="btn btn-primary mt-3">Return to Home</a>
+<div class="container py-5 text-center">
+  <div class="card p-5">
+    <h2 class="mb-3">✅ Order Placed Successfully!</h2>
+    <p class="text-muted">Thank you, {{ order.customer_name }}.</p>
+    <p>Your order number is <strong>#{{ order.id }}</strong>.</p>
+
+    <div class="mt-4 d-flex gap-2 justify-content-center">
+      <a class="btn btn-primary" href="{% url 'orders:order_detail' order.id %}">View Order Details</a>
+      <a class="btn btn-outline-secondary" href="{% url 'orders:my_orders' %}">My Orders</a>
+      <a class="btn btn-outline-dark" href="{% url 'products:product_list' %}">Continue Shopping</a>
+    </div>
+  </div>
 </div>
 {% endblock %}

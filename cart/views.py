@@ -1,28 +1,45 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from products.models import Product
 from decimal import Decimal
+from django.shortcuts import redirect, render, get_object_or_404
+from django.views.decorators.http import require_POST
+from products.models import Product
+
+CART_SESSION_KEY = "cart"
 
 def _get_cart(request):
-    cart = request.session.get("cart", {})
-    request.session.setdefault("cart", cart)
-    return cart
+    return request.session.setdefault(CART_SESSION_KEY, {})
 
-def add_to_cart(request, pid):
-    product = get_object_or_404(Product, id=pid)
+def cart_detail(request):
     cart = _get_cart(request)
-    item = cart.get(str(pid), {"name": product.name, "price": float(product.price), "qty": 0})
-    item["qty"] += 1
-    cart[str(pid)] = item
+    items = []
+    subtotal = Decimal("0.00")
+    for pid, data in cart.items():
+        product = get_object_or_404(Product, pk=int(pid))
+        qty = int(data.get("quantity", 1)) if isinstance(data, dict) else int(data)
+        line_total = product.price * qty
+        subtotal += line_total
+        items.append({
+            "product": product,
+            "qty": qty,
+            "unit_price": product.price,
+            "line_total": line_total,
+        })
+    return render(request, "cart/cart_detail.html", {"items": items, "subtotal": subtotal})
+
+@require_POST
+def add(request, product_id):
+    cart = _get_cart(request)
+    pid = str(product_id)
+    current = cart.get(pid, {"quantity": 0}) if isinstance(cart.get(pid), dict) else {"quantity": int(cart.get(pid, 0))}
+    current["quantity"] = int(current.get("quantity", 0)) + 1
+    cart[pid] = current
     request.session.modified = True
-    return redirect("cart:view_cart")
+    return redirect("cart:cart_detail")
 
-def remove_from_cart(request, pid):
+@require_POST
+def remove(request, product_id):
     cart = _get_cart(request)
-    cart.pop(str(pid), None)
-    request.session.modified = True
-    return redirect("cart:view_cart")
-
-def view_cart(request):
-    cart = _get_cart(request)
-    subtotal = sum(Decimal(str(i["price"])) * i["qty"] for i in cart.values())
-    return render(request, "cart/cart_detail.html", {"cart": cart, "subtotal": subtotal})
+    pid = str(product_id)
+    if pid in cart:
+        del cart[pid]
+        request.session.modified = True
+    return redirect("cart:cart_detail")

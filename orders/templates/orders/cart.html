@@ -1,28 +1,56 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block content %}
-<h2>Your Orders</h2>
-{% if orders %}
-<table>
-    <thead>
+<div class="container py-5">
+  <h2 class="mb-4">Your Cart</h2>
+
+  {% if items %}
+    <table class="table align-middle">
+      <thead>
         <tr>
-            <th>Order ID</th>
-            <th>Date</th>
-            <th>Total</th>
-            <th>Status</th>
+          <th>Product</th>
+          <th class="text-end">Unit Price</th>
+          <th class="text-center">Qty</th>
+          <th class="text-end">Line Total</th>
+          <th></th>
         </tr>
-    </thead>
-    <tbody>
-        {% for order in orders %}
-        <tr>
-            <td>{{ order.id }}</td>
-            <td>{{ order.date }}</td>
-            <td>${{ order.total }}</td>
-            <td>{{ order.status }}</td>
-        </tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+          <tr>
+            <td>{{ it.product.title|default:it.product.name }}</td>
+            <td class="text-end">৳ {{ it.unit_price }}</td>
+            <td class="text-center">{{ it.qty }}</td>
+            <td class="text-end">৳ {{ it.line_total }}</td>
+            <td class="text-end">
+              <form method="post" action="{% url 'cart:remove' it.product.id %}">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger">Remove</button>
+              </form>
+            </td>
+          </tr>
         {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>You have no orders yet.</p>
-{% endif %}
+        <tr>
+          <th colspan="3" class="text-end">Subtotal</th>
+          <th class="text-end">৳ {{ subtotal }}</th>
+          <th></th>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+        Continue Shopping
+      </a>
+
+      <!-- ✅ Checkout MUST be a POST to orders:checkout -->
+      <form method="post" action="{% url 'orders:checkout' %}">
+        {% csrf_token %}
+        <button class="btn btn-success">Proceed to Checkout</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="text-muted">Your cart is empty.</p>
+    <a href="{% url 'products:product_list' %}" class="btn btn-primary mt-2">Shop Now</a>
+  {% endif %}
+</div>
 {% endblock %}
